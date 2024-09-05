@@ -651,7 +651,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 .frame(maxHeight: scrollViewContentHeight)
                 
                 if let footerView = footerView {
-                    footerView
+                    footerView.fixedSize(horizontal: false, vertical: true)
                 }
             }
             .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18)) { scrollView in
