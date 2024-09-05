@@ -60,7 +60,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
         case toast
         case floater(verticalPadding: CGFloat = 10, horizontalPadding: CGFloat = 10, useSafeAreaInset: Bool = true)
 #if os(iOS)
-        case scroll(headerView: AnyView)
+        case scroll(headerView: AnyView, footerView: AnyView? = nil)
 #endif
 
         var defaultPosition: Position {
@@ -640,7 +640,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     private func contentView() -> some View {
 #if os(iOS)
         switch type {
-        case .scroll(let headerView):
+        case .scroll(let headerView, let footerView):
             VStack(spacing: 0) {
                 headerView
                     .fixedSize(horizontal: false, vertical: true)
@@ -649,6 +649,10 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 }
                 // no heigher than its contents
                 .frame(maxHeight: scrollViewContentHeight)
+                
+                if let footerView = footerView {
+                    footerView
+                }
             }
             .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18)) { scrollView in
                 configure(scrollView: scrollView)
