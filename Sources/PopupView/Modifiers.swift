@@ -11,7 +11,7 @@ extension View {
 
     public func popup<PopupContent: View>(
         isPresented: Binding<Bool>,
-        uniqueId: (() -> String)?,
+        uniqueId: (() -> String)? = nil,
         @ViewBuilder view: @escaping () -> PopupContent,
         customize: @escaping (Popup<PopupContent>.PopupParameters) -> Popup<PopupContent>.PopupParameters
         ) -> some View {
