@@ -586,7 +586,6 @@ public struct Popup<PopupContent: View>: ViewModifier {
         scrollViewDelegate.didReachTop = { value in
             scrollViewOffset = CGSize(width: 0, height: -value)
         }
-
         let referenceY = sheetContentRect.height / 3
         scrollViewDelegate.scrollEnded = { value in
             if -value >= referenceY {
@@ -646,7 +645,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
         case .scroll(let headerView, let footerView):
             VStack(spacing: 0) {
                 headerView
-                    .fixedSize(horizontal: false, vertical: true)
+        
                 ScrollView {
                     view()
                 }
@@ -654,7 +653,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 .frame(maxHeight: scrollViewContentHeight)
                 
                 if let footerView = footerView {
-                    footerView.fixedSize(horizontal: false, vertical: true)
+                    footerView
                 }
             }
             .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18)) { scrollView in
