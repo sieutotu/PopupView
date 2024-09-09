@@ -576,6 +576,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
 #if os(iOS)
     private func configure(scrollView: UIScrollView) {
+        scrollViewDelegate.gestureIsCreated = false
         scrollViewDelegate.scrollView = scrollView
         scrollViewDelegate.addGestureIfNeeded()
 
