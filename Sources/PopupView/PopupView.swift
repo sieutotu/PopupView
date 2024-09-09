@@ -24,7 +24,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     init(params: Popup<PopupContent>.PopupParameters,
          view: @escaping () -> PopupContent,
          popupPresented: Bool,
-         uniqueId: String?,
+         uniqueId: (() -> String)?,
          shouldShowContent: Bool,
          showContent: Bool,
          positionIsCalculatedCallback: @escaping () -> (),
@@ -341,7 +341,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     var horizontalPadding: CGFloat
     var useSafeAreaInset: Bool
     var useKeyboardSafeArea: Bool
-    var uniqueId: String?
+    var uniqueId: (() -> String)?
 
     var animation: Animation
 
@@ -572,6 +572,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
         }
         return to
     }
+    
 
 #if os(iOS)
     private func configure(scrollView: UIScrollView) {
@@ -660,7 +661,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 configure(scrollView: scrollView)
             }
             .offset(CGSize(width: 0, height: scrollViewOffset.height))
-            .id(uniqueId)
+            .id(uniqueId?())
 
         default:
             view()
