@@ -14,6 +14,8 @@ public struct FullscreenPopup<Item: Equatable, PopupContent: View>: ViewModifier
 
     @Binding var isPresented: Bool
     @Binding var item: Item?
+    
+    var uniqueId: Binding<String>?
 
     var isBoolMode: Bool
 
@@ -88,6 +90,7 @@ public struct FullscreenPopup<Item: Equatable, PopupContent: View>: ViewModifier
     @State private var eventsSemaphore = DispatchSemaphore(value: 1)
 
     init(isPresented: Binding<Bool> = .constant(false),
+         uniqueId: Binding<String>? = .constant(""),
          item: Binding<Item?> = .constant(nil),
          isBoolMode: Bool,
          params: Popup<PopupContent>.PopupParameters,
@@ -105,7 +108,7 @@ public struct FullscreenPopup<Item: Equatable, PopupContent: View>: ViewModifier
         self.isOpaque = params.isOpaque
         self.userDismissCallback = params.dismissCallback
         self.userWillDismissCallback = params.willDismissCallback
-
+        self.uniqueId = uniqueId
         if let view = view {
             self.view = view
         }
@@ -217,7 +220,7 @@ public struct FullscreenPopup<Item: Equatable, PopupContent: View>: ViewModifier
         Popup(
             params: params,
             view: viewForItem != nil ? viewForItem! : view,
-            popupPresented: popupPresented,
+            popupPresented: popupPresented, uniqueId: uniqueId?.wrappedValue,
             shouldShowContent: shouldShowContent,
             showContent: showContent,
             positionIsCalculatedCallback: {

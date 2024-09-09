@@ -11,12 +11,14 @@ extension View {
 
     public func popup<PopupContent: View>(
         isPresented: Binding<Bool>,
+        uniqueId: Binding<String>?,
         @ViewBuilder view: @escaping () -> PopupContent,
         customize: @escaping (Popup<PopupContent>.PopupParameters) -> Popup<PopupContent>.PopupParameters
         ) -> some View {
             self.modifier(
                 FullscreenPopup<Int, PopupContent>(
                     isPresented: isPresented,
+                    uniqueId: uniqueId,
                     isBoolMode: true,
                     params: customize(Popup<PopupContent>.PopupParameters()),
                     view: view,

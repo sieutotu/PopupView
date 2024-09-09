@@ -24,6 +24,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     init(params: Popup<PopupContent>.PopupParameters,
          view: @escaping () -> PopupContent,
          popupPresented: Bool,
+         uniqueId: String?,
          shouldShowContent: Bool,
          showContent: Bool,
          positionIsCalculatedCallback: @escaping () -> (),
@@ -45,7 +46,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
         self.isOpaque = params.isOpaque
 
         self.view = view
-
+        self.uniqueId = uniqueId
         self.popupPresented = popupPresented
         self.shouldShowContent = shouldShowContent
         self.showContent = showContent
@@ -340,6 +341,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     var horizontalPadding: CGFloat
     var useSafeAreaInset: Bool
     var useKeyboardSafeArea: Bool
+    var uniqueId: String?
 
     var animation: Animation
 
@@ -658,6 +660,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 configure(scrollView: scrollView)
             }
             .offset(CGSize(width: 0, height: scrollViewOffset.height))
+            .id(uniqueId)
 
         default:
             view()
