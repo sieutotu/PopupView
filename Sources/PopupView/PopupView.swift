@@ -661,7 +661,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 configure(scrollView: scrollView)
             }
             .offset(CGSize(width: 0, height: scrollViewOffset.height))
-            .id(uniqueId?())
+            .id(uniqueId)
 
         default:
             view()
