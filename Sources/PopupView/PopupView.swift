@@ -24,7 +24,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     init(params: Popup<PopupContent>.PopupParameters,
          view: @escaping () -> PopupContent,
          popupPresented: Bool,
-         uniqueId: (() -> String)?,
+         uniqueId: Int?,
          shouldShowContent: Bool,
          showContent: Bool,
          positionIsCalculatedCallback: @escaping () -> (),
@@ -341,7 +341,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     var horizontalPadding: CGFloat
     var useSafeAreaInset: Bool
     var useKeyboardSafeArea: Bool
-    var uniqueId: (() -> String)?
+    var uniqueId: Int?
 
     var animation: Animation
 
