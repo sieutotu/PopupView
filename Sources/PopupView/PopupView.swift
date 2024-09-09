@@ -645,7 +645,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
         switch type {
         case .scroll(let headerView, let footerView):
             VStack(spacing: 0) {
-                headerView
+                headerView.fixedSize(horizontal: false, vertical: true)
         
                 ScrollView {
                     view()
@@ -654,7 +654,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 .frame(maxHeight: scrollViewContentHeight)
                 
                 if let footerView = footerView {
-                    footerView
+                    footerView.fixedSize(horizontal: false, vertical: true)
                 }
             }
             .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18)) { scrollView in
