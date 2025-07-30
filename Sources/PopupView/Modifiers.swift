@@ -7,19 +7,21 @@
 
 import SwiftUI
 
+public typealias SendableClosure = @Sendable @MainActor () -> Void
+
 struct PopupDismissKey: EnvironmentKey {
-    static let defaultValue: (() -> Void)? = nil
+    static let defaultValue: SendableClosure? = nil
 }
 
 public extension EnvironmentValues {
-    var popupDismiss: (() -> Void)? {
+    var popupDismiss: SendableClosure? {
         get { self[PopupDismissKey.self] }
         set { self[PopupDismissKey.self] = newValue }
     }
 }
 
+@MainActor
 extension View {
-
     public func popup<PopupContent: View>(
         isPresented: Binding<Bool>,
         uniqueId: Int? = nil,
@@ -93,31 +95,43 @@ extension View {
 
 #if os(iOS)
 
+@MainActor
 extension View {
-  func onOrientationChange(isLandscape: Binding<Bool>, onOrientationChange: @escaping () -> Void) -> some View {
-    self.modifier(OrientationChangeModifier(isLandscape: isLandscape, onOrientationChange: onOrientationChange))
-  }
+    func onOrientationChange(isLandscape: Binding<Bool>, onOrientationChange: @escaping () -> Void) -> some View {
+        self.modifier(OrientationChangeModifier(isLandscape: isLandscape, onOrientationChange: onOrientationChange))
+    }
 }
 
+@MainActor
 struct OrientationChangeModifier: ViewModifier {
     @Binding var isLandscape: Bool
     let onOrientationChange: () -> Void
     
     func body(content: Content) -> some View {
         content
-            .onAppear {
 #if os(iOS)
-                NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
-                    updateOrientation()
-                }
+            .onReceive(NotificationCenter.default
+                .publisher(for: UIDevice.orientationDidChangeNotification)
+                .receive(on: DispatchQueue.main)
+            ) { _ in
                 updateOrientation()
+            }
 #endif
-            }
-            .onDisappear {
-                #if os(iOS)
-                NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
-                #endif
-            }
+//            .onAppear {
+//#if os(iOS)
+//                NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: .main) { _ in
+//                    DispatchQueue.main.async {
+//                        updateOrientation()
+//                    }
+//                }
+//                updateOrientation()
+//#endif
+//            }
+//            .onDisappear {
+//                #if os(iOS)
+//                NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
+//                #endif
+//            }
             .onChange(of: isLandscape) { _ in
                 onOrientationChange()
             }
@@ -125,12 +139,10 @@ struct OrientationChangeModifier: ViewModifier {
 
 #if os(iOS)
     private func updateOrientation() {
-        DispatchQueue.main.async {
-            let newIsLandscape = UIDevice.current.orientation.isLandscape
-            if newIsLandscape != isLandscape {
-                isLandscape = newIsLandscape
-                onOrientationChange()
-            }
+        let newIsLandscape = UIDevice.current.orientation.isLandscape
+        if newIsLandscape != isLandscape {
+            isLandscape = newIsLandscape
+            onOrientationChange()
         }
     }
 #endif

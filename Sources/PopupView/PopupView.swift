@@ -11,27 +11,20 @@ import SwiftUI
 import SwiftUIIntrospect
 #endif
 
-public enum DismissSource {
-    case binding // set isPresented to false ot item to nil
-    case tapInside
-    case tapOutside
-    case drag
-    case autohide
-}
-
 public struct Popup<PopupContent: View>: ViewModifier {
 
     init(params: Popup<PopupContent>.PopupParameters,
          view: @escaping () -> PopupContent,
-         popupPresented: Bool,
          uniqueId: Int?,
-         shouldShowContent: Bool,
+         shouldShowContent: Binding<Bool>,
          showContent: Bool,
+         isDragging: Binding<Bool>,
+         timeToHide: Binding<Bool>,
          positionIsCalculatedCallback: @escaping () -> (),
-         animationCompletedCallback: @escaping () -> (),
          dismissCallback: @escaping (DismissSource)->()) {
 
         self.type = params.type
+        self.displayMode = params.displayMode
         self.position = params.position ?? params.type.defaultPosition
         self.appearFrom = params.appearFrom
         self.disappearTo = params.disappearTo
@@ -42,270 +35,17 @@ public struct Popup<PopupContent: View>: ViewModifier {
         self.animation = params.animation
         self.dragToDismiss = params.dragToDismiss
         self.dragToDismissDistance = params.dragToDismissDistance
+        self.dismissEnabled = params.dismissEnabled
         self.closeOnTap = params.closeOnTap
-        self.isOpaque = params.isOpaque
 
         self.view = view
         self.uniqueId = uniqueId
-        self.popupPresented = popupPresented
         self.shouldShowContent = shouldShowContent
         self.showContent = showContent
+        self._isDragging = isDragging
+        self._timeToHide = timeToHide
         self.positionIsCalculatedCallback = positionIsCalculatedCallback
-        self.animationCompletedCallback = animationCompletedCallback
         self.dismissCallback = dismissCallback
-    }
-
-    public enum PopupType {
-
-        case `default`
-        case toast
-        case floater(verticalPadding: CGFloat = 10, horizontalPadding: CGFloat = 10, useSafeAreaInset: Bool = true)
-#if os(iOS)
-        case scroll(headerView: AnyView, footerView: AnyView? = nil)
-#endif
-
-        var defaultPosition: Position {
-            if case .default = self {
-                return .center
-            }
-            return .bottom
-        }
-
-        var verticalPadding: CGFloat {
-            if case let .floater(verticalPadding, _, _) = self {
-                return verticalPadding
-            }
-            return 0
-        }
-
-        var horizontalPadding: CGFloat {
-            if case let .floater(_, horizontalPadding, _) = self {
-                return horizontalPadding
-            }
-            return 0
-        }
-
-        var useSafeAreaInset: Bool {
-            if case let .floater(_, _, use) = self {
-                return use
-            }
-            return false
-        }
-    }
-
-    public enum Position {
-        case topLeading
-        case top
-        case topTrailing
-
-        case leading
-        case center // usual popup
-        case trailing
-
-        case bottomLeading
-        case bottom
-        case bottomTrailing
-
-        var isTop: Bool {
-            [.topLeading, .top, .topTrailing].contains(self)
-        }
-
-        var isVerticalCenter: Bool {
-            [.leading, .center, .trailing].contains(self)
-        }
-
-        var isBottom: Bool {
-            [.bottomLeading, .bottom, .bottomTrailing].contains(self)
-        }
-
-        var isLeading: Bool {
-            [.topLeading, .leading, .bottomLeading].contains(self)
-        }
-
-        var isHorizontalCenter: Bool {
-            [.top, .center, .bottom].contains(self)
-        }
-
-        var isTrailing: Bool {
-            [.topTrailing, .trailing, .bottomTrailing].contains(self)
-        }
-    }
-
-    public enum AppearAnimation {
-        case topSlide
-        case bottomSlide
-        case leftSlide
-        case rightSlide
-        case centerScale
-    }
-
-    public struct PopupParameters {
-        var type: PopupType = .default
-
-        var position: Position?
-
-        var appearFrom: AppearAnimation?
-        var disappearTo: AppearAnimation?
-
-        var animation: Animation = .easeOut(duration: 0.3)
-
-        /// If nil - never hides on its own
-        var autohideIn: Double?
-
-        /// Should allow dismiss by dragging - default is `true`
-        var dragToDismiss: Bool = true
-        
-        /// Minimum distance to drag to dismiss
-        var dragToDismissDistance: CGFloat?
-
-        /// Should close on tap - default is `true`
-        var closeOnTap: Bool = true
-
-        /// Should close on tap outside - default is `false`
-        var closeOnTapOutside: Bool = false
-
-        /// Background color for outside area
-        var backgroundColor: Color = .clear
-
-        /// Custom background view for outside area
-        var backgroundView: AnyView?
-
-        /// If true - taps do not pass through popup's background and the popup is displayed on top of navbar
-        var isOpaque: Bool = false
-
-        /// move up for keyboardHeight when it is displayed
-        var useKeyboardSafeArea: Bool = false
-
-        /// called when when dismiss animation starts
-        var willDismissCallback: (DismissSource) -> () = {_ in}
-
-        /// called when when dismiss animation ends
-        var dismissCallback: (DismissSource) -> () = {_ in}
-
-        public func type(_ type: PopupType) -> PopupParameters {
-            var params = self
-            params.type = type
-            return params
-        }
-
-        public func position(_ position: Position) -> PopupParameters {
-            var params = self
-            params.position = position
-            return params
-        }
-
-        public func appearFrom(_ appearFrom: AppearAnimation) -> PopupParameters {
-            var params = self
-            params.appearFrom = appearFrom
-            return params
-        }
-
-        public func disappearTo(_ disappearTo: AppearAnimation) -> PopupParameters {
-            var params = self
-            params.disappearTo = disappearTo
-            return params
-        }
-
-        public func animation(_ animation: Animation) -> PopupParameters {
-            var params = self
-            params.animation = animation
-            return params
-        }
-
-        public func autohideIn(_ autohideIn: Double?) -> PopupParameters {
-            var params = self
-            params.autohideIn = autohideIn
-            return params
-        }
-
-        /// Should allow dismiss by dragging - default is `true`
-        public func dragToDismiss(_ dragToDismiss: Bool) -> PopupParameters {
-            var params = self
-            params.dragToDismiss = dragToDismiss
-            return params
-        }
-        
-        /// Minimum distance to drag to dismiss
-        public func dragToDismissDistance(_ dragToDismissDistance: CGFloat) -> PopupParameters {
-            var params = self
-            params.dragToDismissDistance = dragToDismissDistance
-            return params
-        }
-
-        /// Should close on tap - default is `true`
-        public func closeOnTap(_ closeOnTap: Bool) -> PopupParameters {
-            var params = self
-            params.closeOnTap = closeOnTap
-            return params
-        }
-
-        /// Should close on tap outside - default is `false`
-        public func closeOnTapOutside(_ closeOnTapOutside: Bool) -> PopupParameters {
-            var params = self
-            params.closeOnTapOutside = closeOnTapOutside
-            return params
-        }
-
-        public func backgroundColor(_ backgroundColor: Color) -> PopupParameters {
-            var params = self
-            params.backgroundColor = backgroundColor
-            return params
-        }
-
-        public func backgroundView<BackgroundView: View>(_ backgroundView: ()->(BackgroundView)) -> PopupParameters {
-            var params = self
-            params.backgroundView = AnyView(backgroundView())
-            return params
-        }
-
-        public func isOpaque(_ isOpaque: Bool) -> PopupParameters {
-            var params = self
-            params.isOpaque = isOpaque
-            return params
-        }
-
-        public func useKeyboardSafeArea(_ useKeyboardSafeArea: Bool) -> PopupParameters {
-            var params = self
-            params.useKeyboardSafeArea = useKeyboardSafeArea
-            return params
-        }
-
-        // MARK: - dismiss callbacks
-
-        public func willDismissCallback(_ dismissCallback: @escaping (DismissSource) -> ()) -> PopupParameters {
-            var params = self
-            params.willDismissCallback = dismissCallback
-            return params
-        }
-
-        public func willDismissCallback(_ dismissCallback: @escaping () -> ()) -> PopupParameters {
-            var params = self
-            params.willDismissCallback = { _ in
-                dismissCallback()
-            }
-            return params
-        }
-
-        @available(*, deprecated, renamed: "dismissCallback")
-        public func dismissSourceCallback(_ dismissCallback: @escaping (DismissSource) -> ()) -> PopupParameters {
-            var params = self
-            params.dismissCallback = dismissCallback
-            return params
-        }
-
-        public func dismissCallback(_ dismissCallback: @escaping (DismissSource) -> ()) -> PopupParameters {
-            var params = self
-            params.dismissCallback = dismissCallback
-            return params
-        }
-
-        public func dismissCallback(_ dismissCallback: @escaping () -> ()) -> PopupParameters {
-            var params = self
-            params.dismissCallback = { _ in
-                dismissCallback()
-            }
-            return params
-        }
     }
 
     private enum DragState {
@@ -334,6 +74,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
     // MARK: - Public Properties
 
     var type: PopupType
+    var displayMode: DisplayMode
     var position: Position
     var appearFrom: AppearAnimation?
     var disappearTo: AppearAnimation?
@@ -345,6 +86,10 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
     var animation: Animation
 
+    /// Becomes true when `dismissibleIn` times finishes
+    /// Makes no sense if `dismissibleIn` is nil
+    var dismissEnabled: Binding<Bool>
+
     /// Should close on tap - default is `true`
     var closeOnTap: Bool
 
@@ -353,24 +98,15 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
     /// Minimum distance to drag to dismiss
     var dragToDismissDistance: CGFloat?
-    
-    /// If opaque - taps do not pass through popup's background color
-    var isOpaque: Bool
-
-    /// Variable showing changes in isPresented/item, used here to determine direction of animation (showing or hiding)
-    var popupPresented: Bool
 
     /// Trigger popup showing/hiding animations and...
-    var shouldShowContent: Bool
+    var shouldShowContent: Binding<Bool>
 
     /// ... once hiding animation is finished remove popup from the memory using this flag
     var showContent: Bool
 
     /// called when all the offsets are calculated, so everything is ready for animation
     var positionIsCalculatedCallback: () -> ()
-
-    /// called on showing/hiding sliding animation completed
-    var animationCompletedCallback: () -> ()
 
     /// Call dismiss callback with dismiss source
     var dismissCallback: (DismissSource)->()
@@ -403,6 +139,10 @@ public struct Popup<PopupContent: View>: ViewModifier {
     /// Last position for drag gesture
     @State private var lastDragPosition: CGSize = .zero
 
+    @Binding var isDragging: Bool
+
+    @Binding var timeToHide: Bool
+
     // MARK: - Drag to dismiss with scroll
 #if os(iOS)
     /// UIScrollView delegate, needed for calling didEndDragging
@@ -413,13 +153,16 @@ public struct Popup<PopupContent: View>: ViewModifier {
     @State private var scrollViewOffset: CGSize = .zero
 
     /// Height of scrollView content that will be displayed on the screen
-    @State var scrollViewContentHeight = 0.0
+    @State private var scrollViewContentHeight = 0.0
+
+    /// Track ScrollView's frame to check if it's ready
+    @State private var scrollViewRect: CGRect = .zero
 
     // MARK: - Position calculations
 
     /// The offset when the popup is displayed
     private var displayedOffsetY: CGFloat {
-        if isOpaque {
+        if displayMode != .overlay {
             if position.isTop {
                 return verticalPadding + (useSafeAreaInset ? 0 :  -safeAreaInsets.top)
             }
@@ -454,7 +197,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
     /// The offset when the popup is displayed
     private var displayedOffsetX: CGFloat {
-        if isOpaque {
+        if displayMode != .overlay {
             if position.isLeading {
                 return horizontalPadding + (useSafeAreaInset ? safeAreaInsets.leading : 0)
             }
@@ -485,7 +228,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
         }
 
         // appearing animation
-        if popupPresented {
+        if shouldShowContent.wrappedValue {
             return hiddenOffset(calculatedAppearFrom)
         }
         // hiding animation
@@ -504,14 +247,14 @@ public struct Popup<PopupContent: View>: ViewModifier {
             return CGPoint(x: -screenWidth, y: displayedOffsetY)
         case .rightSlide:
             return CGPoint(x: screenWidth, y: displayedOffsetY)
-        case .centerScale:
+        case .centerScale, .none:
             return CGPoint(x: displayedOffsetX, y: displayedOffsetY)
         }
     }
 
     /// Passes the desired position to actualCurrentOffset allowing to animate selectively
     private var targetCurrentOffset: CGPoint {
-        shouldShowContent ? CGPoint(x: displayedOffsetX, y: displayedOffsetY) : hiddenOffset
+        shouldShowContent.wrappedValue ? CGPoint(x: displayedOffsetX, y: displayedOffsetY) : hiddenOffset
     }
 
     // MARK: - Scale calculations
@@ -523,10 +266,10 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
     /// The scale when the popup is hidden
     private var hiddenScale: CGFloat {
-        if popupPresented, calculatedAppearFrom == .centerScale {
+        if shouldShowContent.wrappedValue, calculatedAppearFrom == .centerScale {
             return 0
         }
-        else if !popupPresented, calculatedDisappearTo == .centerScale {
+        else if !shouldShowContent.wrappedValue, calculatedDisappearTo == .centerScale {
             return 0
         }
         return 1
@@ -534,7 +277,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
     /// Passes the desired scale to actualScale allowing to animate selectively
     private var targetScale: CGFloat {
-        shouldShowContent ? displayedScale : hiddenScale
+        shouldShowContent.wrappedValue ? displayedScale : hiddenScale
     }
 
     // MARK: - Appear position direction calculations
@@ -652,10 +395,12 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 }
                 // no heigher than its contents
                 .frame(maxHeight: scrollViewContentHeight)
+                .frameGetter($scrollViewRect)
                 
                 if let footerView = footerView {
                     footerView.fixedSize(horizontal: false, vertical: true)
                 }
+                
             }
             .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18)) { scrollView in
                 configure(scrollView: scrollView)
@@ -680,14 +425,16 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 VStack {
                     contentView()
                         .addTapIfNotTV(if: closeOnTap) {
-                            dismissCallback(.tapInside)
+                            if dismissEnabled.wrappedValue {
+                                dismissCallback(.tapInside)
+                            }
                         }
                         .scaleEffect(actualScale) // scale is here to avoid it messing with frameGetter for sheetContentRect
                 }
                 .frameGetter($sheetContentRect)
                 .position(x: sheetContentRect.width/2 + actualCurrentOffset.x, y: sheetContentRect.height/2 + actualCurrentOffset.y)
 
-                .onChange(of: shouldShowContent) { newValue in
+                .onChange(of: shouldShowContent.wrappedValue) { newValue in
                     if actualCurrentOffset == CGPoint.pointFarAwayFromScreen { // don't animate initial positioning outside the screen
                         DispatchQueue.main.async {
                             actualCurrentOffset = hiddenOffset
@@ -698,14 +445,12 @@ public struct Popup<PopupContent: View>: ViewModifier {
                     DispatchQueue.main.async {
                         withAnimation(animation) {
                             changeParamsWithAnimation(newValue)
-                        } completion: {
-                            animationCompletedCallback()
                         }
                     }
                 }
 
                 .onChange(of: keyboardHeightHelper.keyboardHeight) { _ in
-                    if shouldShowContent {
+                    if shouldShowContent.wrappedValue {
                         DispatchQueue.main.async {
                             withAnimation(animation) {
                                 changeParamsWithAnimation(true)
@@ -715,8 +460,14 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 }
 
                 .onChange(of: sheetContentRect.size) { sheetContentRect in
+                    #if os(iOS)
+                    // check if scrollView has already calculated its height, otherwise sheetContentRect is already non-zero but yet incorrect
+                    if case .scroll(_) = type, scrollViewRect.height == 0 {
+                        return
+                    }
+                    #endif
                     positionIsCalculatedCallback()
-                    if shouldShowContent { // already displayed but the size has changed
+                    if shouldShowContent.wrappedValue { // already displayed but the size has changed
                         actualCurrentOffset = targetCurrentOffset
                     }
                 }
@@ -731,7 +482,9 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 VStack {
                     contentView()
                         .addTapIfNotTV(if: closeOnTap) {
-                            dismissCallback(.tapInside)
+                            if dismissEnabled.wrappedValue {
+                                dismissCallback(.tapInside)
+                            }
                         }
                         .scaleEffect(actualScale) // scale is here to avoid it messing with frameGetter for sheetContentRect
                 }
@@ -739,7 +492,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 .position(x: sheetContentRect.width/2 + actualCurrentOffset.x, y: sheetContentRect.height/2 + actualCurrentOffset.y)
 
                 .onChange(of: targetCurrentOffset) { newValue in
-                    if !shouldShowContent, newValue == hiddenOffset { // don't animate initial positioning outside the screen
+                    if !shouldShowContent.wrappedValue, newValue == hiddenOffset { // don't animate initial positioning outside the screen
                         actualCurrentOffset = newValue
                         actualScale = targetScale
                     } else {
@@ -751,7 +504,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 }
 
                 .onChange(of: targetScale) { newValue in
-                    if !shouldShowContent, newValue == hiddenScale { // don't animate initial positioning outside the screen
+                    if !shouldShowContent.wrappedValue, newValue == hiddenScale { // don't animate initial positioning outside the screen
                         actualCurrentOffset = targetCurrentOffset
                         actualScale = newValue
                     } else {
@@ -781,13 +534,19 @@ public struct Popup<PopupContent: View>: ViewModifier {
 #if !os(tvOS)
         let drag = DragGesture()
             .updating($dragState) { drag, state, _ in
+                if !isDragging {
+                    DispatchQueue.main.async {
+                        isDragging = true
+                    }
+                }
                 state = .dragging(translation: drag.translation)
             }
             .onEnded(onDragEnded)
 
         return sheet()
             .applyIf(dragToDismiss) {
-                $0.offset(dragOffset())
+                $0
+                    .offset(dragOffset())
                     .simultaneousGesture(drag)
             }
 #else
@@ -823,13 +582,15 @@ public struct Popup<PopupContent: View>: ViewModifier {
             if dragState.translation.width > 0 {
                 return CGSize(width: dragState.translation.width, height: 0)
             }
-        case .centerScale:
+        case .centerScale, .none:
             return .zero
         }
         return .zero
     }
 
     private func onDragEnded(drag: DragGesture.Value) {
+        isDragging = false
+
         var referenceX = sheetContentRect.width / 3
         var referenceY = sheetContentRect.height / 3
         
@@ -868,11 +629,16 @@ public struct Popup<PopupContent: View>: ViewModifier {
             if drag.translation.width > referenceX {
                 shouldDismiss = true
             }
-        case .centerScale:
+        case .centerScale, .none:
             break
         }
 
-        if shouldDismiss {
+        if timeToHide { // autohide timer was finished while the user was dragging
+            timeToHide = false
+            shouldDismiss = true
+        }
+
+        if dismissEnabled.wrappedValue, shouldDismiss {
             dismissCallback(.drag)
         } else {
             withAnimation {
