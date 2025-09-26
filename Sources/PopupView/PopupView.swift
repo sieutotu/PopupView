@@ -402,7 +402,7 @@ public struct Popup<PopupContent: View>: ViewModifier {
                 }
                 
             }
-            .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18)) { scrollView in
+            .introspect(.scrollView, on: .iOS(.v15, .v16, .v17, .v18, .v26)) { scrollView in
                 configure(scrollView: scrollView)
             }
             .offset(CGSize(width: 0, height: scrollViewOffset.height))
@@ -593,12 +593,12 @@ public struct Popup<PopupContent: View>: ViewModifier {
 
         var referenceX = sheetContentRect.width / 3
         var referenceY = sheetContentRect.height / 3
-        
+
         if let dragToDismissDistance = dragToDismissDistance {
             referenceX = dragToDismissDistance
             referenceY = dragToDismissDistance
         }
-        
+
         var shouldDismiss = false
         switch calculatedAppearFrom {
         case .topSlide:
